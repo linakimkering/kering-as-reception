@@ -211,7 +211,7 @@ let imgSeq = 0;
 
 // 구글시트에 접수 내역을 실시간으로 쌓고 싶으면, Apps Script 웹앱 배포 후
 // 생성되는 URL을 아래에 붙여넣으세요. 비워두면 구글시트 전송 없이 앱 자체에만 저장됩니다.
-const SHEET_WEBHOOK_URL = "";
+const SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyFRBIAXsa7XANbYs2kwiSKqWjS6QvYuSbgFMOkqKFCjFe_wyeK2Clkgq7QGZuxddfb/exec";
 
 function sendToSheet(rec){
   if(!SHEET_WEBHOOK_URL) return;
