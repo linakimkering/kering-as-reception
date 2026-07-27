@@ -271,6 +271,33 @@ function fileToBase64(file){
   });
 }
 
+// 사진 용량이 너무 크면(폰 카메라 원본 등) 서버 요청이 거절되므로,
+// 가로/세로 최대 1280px, JPEG 품질 75%로 줄여서 base64로 변환
+function loadImageFromFile(file){
+  return new Promise((res, rej)=>{
+    const img = new Image();
+    img.onload = ()=>res(img);
+    img.onerror = ()=>rej(new Error('이미지를 불러오지 못했습니다'));
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+async function fileToCompressedBase64(file, maxDim=1280, quality=0.75){
+  const img = await loadImageFromFile(file);
+  let { width, height } = img;
+  if(width > maxDim || height > maxDim){
+    if(width > height){ height = Math.round(height * maxDim / width); width = maxDim; }
+    else { width = Math.round(width * maxDim / height); height = maxDim; }
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+  URL.revokeObjectURL(img.src);
+  const dataUrl = canvas.toDataURL('image/jpeg', quality);
+  return dataUrl.split(',')[1];
+}
+
 const thumbRow = document.getElementById('thumbRow');
 const thumbCountRow = document.getElementById('thumbCountRow');
 const thumbCount = document.getElementById('thumbCount');
@@ -278,8 +305,16 @@ const thumbCount = document.getElementById('thumbCount');
 async function addFiles(fileList){
   const files = Array.from(fileList).filter(f=>f.type.startsWith('image/'));
   for(const f of files){
-    const data = await fileToBase64(f);
-    images.push({ id:'img'+(imgSeq++), data, mediaType: f.type || 'image/jpeg' });
+    let data, mediaType;
+    try{
+      data = await fileToCompressedBase64(f);
+      mediaType = 'image/jpeg';
+    }catch(e){
+      // 압축 실패 시 원본이라도 사용 (구형 브라우저 등 예외 상황 대비)
+      data = await fileToBase64(f);
+      mediaType = f.type || 'image/jpeg';
+    }
+    images.push({ id:'img'+(imgSeq++), data, mediaType });
   }
   if(files.length){
     renderThumbs();
